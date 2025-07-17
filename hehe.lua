@@ -13,7 +13,7 @@ local VirtualUser = game:GetService("VirtualUser")
 -- Original AFK function (keeping as it's separate from UI)
 task.spawn(function()
 pcall(function()
-if game.Placeid = 123456789 then
+if game.Placeid = 17574618959 then
 if game.Workspace:FindFirstChild("RobloxForwardPortals") then
 game.Workspace.RobloxForwardPortals:Destroy()
 end
