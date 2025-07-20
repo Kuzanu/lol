@@ -1,8 +1,7 @@
--- // VoidUI Library \\ --
+-- // VoidUI Library v2 with Fluent Toggle \\ --
 local VoidUI = {}
 
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -35,11 +34,12 @@ end
 
 function VoidUI:CreateWindow(settings)
 	local name = settings.Name or "VoidUI"
-	local theme = settings.ThemeColor or Color3.fromRGB(60, 60, 60)
+	local theme = settings.ThemeColor or Color3.fromRGB(80, 0, 150)
 
 	-- ScreenGUI
 	local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 	gui.Name = name .. "_UI"
+	gui.ResetOnSpawn = false
 
 	-- Main Frame
 	local main = Instance.new("Frame", gui)
@@ -48,7 +48,6 @@ function VoidUI:CreateWindow(settings)
 	main.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 	main.BorderSizePixel = 0
 	main.Name = "Main"
-	main.ClipsDescendants = true
 
 	local UICorner = Instance.new("UICorner", main)
 	UICorner.CornerRadius = UDim.new(0, 8)
@@ -72,7 +71,7 @@ function VoidUI:CreateWindow(settings)
 	title.TextSize = 18
 	title.Name = "Title"
 
-	MakeDraggable(main)
+	MakeDraggable(topbar)
 
 	-- Tabs holder
 	local tabHolder = Instance.new("Frame", main)
@@ -83,6 +82,7 @@ function VoidUI:CreateWindow(settings)
 
 	local UIList = Instance.new("UIListLayout", tabHolder)
 	UIList.SortOrder = Enum.SortOrder.LayoutOrder
+	UIList.Padding = UDim.new(0, 2)
 
 	local contentHolder = Instance.new("Frame", main)
 	contentHolder.Size = UDim2.new(1, -140, 1, -40)
@@ -91,10 +91,11 @@ function VoidUI:CreateWindow(settings)
 	contentHolder.BorderSizePixel = 0
 	contentHolder.ClipsDescendants = true
 
-	-- Tab function
+	local tabs = {}
+
 	local function createTab(tabName)
 		local tabButton = Instance.new("TextButton", tabHolder)
-		tabButton.Size = UDim2.new(1, 0, 0, 40)
+		tabButton.Size = UDim2.new(1, 0, 0, 36)
 		tabButton.Text = tabName
 		tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 		tabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -116,36 +117,76 @@ function VoidUI:CreateWindow(settings)
 		layout.Padding = UDim.new(0, 6)
 
 		tabButton.MouseButton1Click:Connect(function()
-			for _, child in pairs(contentHolder:GetChildren()) do
-				if child:IsA("ScrollingFrame") then
-					child.Visible = false
-				end
+			for _, v in pairs(tabs) do
+				v.Content.Visible = false
 			end
 			tabContent.Visible = true
 		end)
 
-		return {
+		local tabObj = {
 			Button = tabButton,
 			Content = tabContent
 		}
+		table.insert(tabs, tabObj)
+		if #tabs == 1 then tabContent.Visible = true end
+
+		return tabObj
 	end
 
-	-- Element templates
 	local function addToggle(tab, text, callback)
-		local toggle = Instance.new("TextButton", tab.Content)
-		toggle.Size = UDim2.new(1, -10, 0, 30)
-		toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-		toggle.Text = text .. " [OFF]"
-		toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-		toggle.Font = Enum.Font.Gotham
-		toggle.TextSize = 14
-		toggle.BorderSizePixel = 0
+		local container = Instance.new("Frame", tab.Content)
+		container.Size = UDim2.new(1, -10, 0, 32)
+		container.BackgroundTransparency = 1
+		container.BorderSizePixel = 0
+
+		local label = Instance.new("TextLabel", container)
+		label.Size = UDim2.new(1, -60, 1, 0)
+		label.Position = UDim2.new(0, 0, 0, 0)
+		label.BackgroundTransparency = 1
+		label.Text = text
+		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.Font = Enum.Font.Gotham
+		label.TextSize = 14
+		label.TextXAlignment = Enum.TextXAlignment.Left
+
+		local toggleBG = Instance.new("Frame", container)
+		toggleBG.Size = UDim2.new(0, 50, 0, 24)
+		toggleBG.Position = UDim2.new(1, -55, 0.5, -12)
+		toggleBG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		toggleBG.BorderSizePixel = 0
+		toggleBG.Name = "ToggleBG"
+		toggleBG.ClipsDescendants = true
+
+		local cornerBG = Instance.new("UICorner", toggleBG)
+		cornerBG.CornerRadius = UDim.new(1, 0)
+
+		local thumb = Instance.new("Frame", toggleBG)
+		thumb.Size = UDim2.new(0, 20, 0, 20)
+		thumb.Position = UDim2.new(0, 2, 0.5, -10)
+		thumb.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+		thumb.BorderSizePixel = 0
+
+		local cornerThumb = Instance.new("UICorner", thumb)
+		cornerThumb.CornerRadius = UDim.new(1, 0)
 
 		local toggled = false
-		toggle.MouseButton1Click:Connect(function()
-			toggled = not toggled
-			toggle.Text = text .. (toggled and " [ON]" or " [OFF]")
+
+		local function updateToggle(state)
+			toggled = state
+			if toggled then
+				TweenService:Create(toggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play()
+				TweenService:Create(thumb, TweenInfo.new(0.2), {Position = UDim2.new(1, -22, 0.5, -10)}):Play()
+			else
+				TweenService:Create(toggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+				TweenService:Create(thumb, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -10)}):Play()
+			end
 			if callback then callback(toggled) end
+		end
+
+		toggleBG.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				updateToggle(not toggled)
+			end
 		end)
 	end
 
