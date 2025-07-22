@@ -1127,7 +1127,6 @@ local function abbreviateNumber(value)
     end
 end
 
--- Single paragraph for all stats
 local statsParagraph = Tabs.Status:CreateParagraph("AllStats", {
     Title = "Session Stats",
     Content = "Loading...",
@@ -1146,7 +1145,7 @@ local function createMyParagraphStats()
     local killsStat = leaderstats:WaitForChild("Kills")
     local evilKarmaStat = player:WaitForChild("evilKarma")
     local goodKarmaStat = player:WaitForChild("goodKarma")
-    local goodKarmaStat = player:WaitForChild("rebirths")
+    local rebirthStat = player:WaitForChild("rebirths")
 
     local initialStrength = strengthStat.Value
     local initialDurability = durabilityStat.Value
@@ -1180,14 +1179,13 @@ Rebirths Gained: %s
             abbreviateNumber(agilityStat.Value - initialAgility),
             abbreviateNumber(killsStat.Value - initialKills),
             abbreviateNumber(evilKarmaStat.Value - initialEvilKarma),
-            abbreviateNumber(goodKarmaStat.Value - initialGoodKarma)
+            abbreviateNumber(goodKarmaStat.Value - initialGoodKarma),
             abbreviateNumber(rebirthStat.Value - initialRebirths)
         )
 
         statsParagraph:SetContent(content)
     end
 
-    -- Connect stat changes to updates
     strengthStat.Changed:Connect(updateAllStats)
     durabilityStat.Changed:Connect(updateAllStats)
     agilityStat.Changed:Connect(updateAllStats)
@@ -1196,10 +1194,7 @@ Rebirths Gained: %s
     goodKarmaStat.Changed:Connect(updateAllStats)
     rebirthStat.Changed:Connect(updateAllStats)
 
-    -- Update loop for time
     game:GetService("RunService").Heartbeat:Connect(updateAllStats)
-
-    -- Initial refresh
     updateAllStats()
 end
 
