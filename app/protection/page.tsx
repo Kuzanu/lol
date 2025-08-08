@@ -12,6 +12,10 @@ import { ShieldCheck, Upload, FileCode, ArrowRight, CheckCircle2, XCircle, Alert
 
 type Status = "idle" | "success" | "error"
 
+function safeName(name: string) {
+  return name.trim().toLowerCase().replace(/[^\w\-]+/g, "_").slice(0, 128)
+}
+
 export default function ProtectionPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [code, setCode] = useState<string>("")
@@ -67,14 +71,25 @@ export default function ProtectionPage() {
     // Generate a compact, URL-safe token
     const arr = new Uint8Array(16)
     crypto.getRandomValues(arr)
-    // Convert to base36 string for compact readability
     let num = ""
     for (let i = 0; i < arr.length; i++) {
       num += arr[i].toString(16).padStart(2, "0")
     }
-    // add a short checksum-ish suffix
     const suffix = Math.floor(Math.random() * 1e8).toString(36)
     return `${num.slice(0, 24)}-${suffix}`
+  }
+
+  const persistCode = async (token: string, scriptName: string, codeText: string) => {
+    // Store the code on the server so Roblox can fetch it later
+    const res = await fetch("/api/protect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, script: scriptName, code: codeText }),
+    })
+    if (!res.ok) {
+      throw new Error("persist-failed")
+    }
+    return res.json()
   }
 
   const confirmName = async () => {
@@ -84,7 +99,7 @@ export default function ProtectionPage() {
     setApiToken("")
     setLoadSnippet("")
     // Simulate async
-    await new Promise((r) => setTimeout(r, 500))
+    await new Promise((r) => setTimeout(r, 400))
 
     try {
       if (typeof window === "undefined") return
@@ -113,23 +128,29 @@ export default function ProtectionPage() {
 
       // Success path
       const token = genApi()
-      // Persist
+
+      // Persist the code to the server (keyed by token + safe script name)
+      const normalized = safeName(trimmed)
+      await persistCode(token, normalized, code || "-- no content")
+
+      // Persist name mapping locally (for collision checks UX)
       const map = JSON.parse(localStorage.getItem(mapKey) || "{}")
       map[trimmed] = token
       used.push(trimmed)
       localStorage.setItem(mapKey, JSON.stringify(map))
       localStorage.setItem(namesKey, JSON.stringify(used))
 
+      // Build loader URL that hits the same PAGE route with ?format=lua
       const url = `https://nebula-protecter.vercel.app/protected/API-${encodeURIComponent(
         token
-      )}/name/${encodeURIComponent(trimmed)}/raw?v=${Date.now()}`
+      )}/name/${encodeURIComponent(trimmed)}?format=lua&v=${Date.now()}`
       const snippet = `loadstring(game:HttpGet("${url}"))()`
 
       setApiToken(token)
       setLoadSnippet(snippet)
       setStatus("success")
       setMessage("Successful")
-    } catch {
+    } catch (e) {
       setStatus("error")
       setMessage("Failed — Bad internet connection")
     }
@@ -327,7 +348,7 @@ export default function ProtectionPage() {
                       Generated API: <span className="font-mono text-zinc-300">API-{apiToken}</span>
                     </div>
                     <div className="text-xs text-zinc-500">
-                      This URL serves Lua (text/plain) and is compatible with loadstring(game:HttpGet(...))() in Roblox.
+                      Open the public page in a browser without the format parameter to see the protected banner.
                     </div>
                   </div>
                 )}
