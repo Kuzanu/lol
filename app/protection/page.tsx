@@ -122,7 +122,7 @@ export default function ProtectionPage() {
 
       const url = `https://nebula-protecter.vercel.app/protected/API-${encodeURIComponent(
         token
-      )}/name/${encodeURIComponent(trimmed)}`
+      )}/name/${encodeURIComponent(trimmed)}/raw?v=${Date.now()}`
       const snippet = `loadstring(game:HttpGet("${url}"))()`
 
       setApiToken(token)
@@ -325,6 +325,9 @@ export default function ProtectionPage() {
                     </div>
                     <div className="text-xs text-zinc-500">
                       Generated API: <span className="font-mono text-zinc-300">API-{apiToken}</span>
+                    </div>
+                    <div className="text-xs text-zinc-500">
+                      This URL serves Lua (text/plain) and is compatible with loadstring(game:HttpGet(...))() in Roblox.
                     </div>
                   </div>
                 )}
