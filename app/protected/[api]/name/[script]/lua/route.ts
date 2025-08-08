@@ -9,7 +9,7 @@ function makePlaceholderLua(scriptName: string, apiToken: string) {
   const safeScript = scriptName.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
   const safeToken = apiToken.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
   return `-- Nebula Protection
--- Placeholder: code not found for this token/name.
+-- Placeholder: source not found for this token/name.
 local _name = "${safeScript}"
 local _api = "API-${safeToken}"
 
@@ -30,24 +30,16 @@ return true
 
 export async function GET(req: NextRequest, context: { params: { api: string; script: string } }) {
   const { api, script } = context.params
-  const format = new URL(req.url).searchParams.get("format")
-
-  // Only serve Lua when explicitly requested with ?format=lua
-  if (format !== "lua") {
-    // Defer to the page.tsx for HTML rendering by redirecting to the bare URL (no query)
-    // Browsers will land on the page, loadstring will always include format=lua.
-    const url = new URL(req.url)
-    url.search = ""
-    return new Response(null, { status: 307, headers: { Location: url.toString() } })
-  }
-
   const token = (api || "").startsWith("API-") ? api.slice(4) : api || ""
-  const safe = safeName(decodeURIComponent(script || ""))
+  const normalized = safeName(decodeURIComponent(script || ""))
 
   try {
-    // Attempt to fetch stored code from the blob at a deterministic key
-    const key = `protected/${token}/${safe}.lua`
+    const key = `protected/${token}/${normalized}.lua`
     const file = await get(key)
+    // @vercel/blob get() provides a body (ReadableStream) on Node runtime
+    // Serve Lua as text/plain for Roblox loadstring
+    // If body is missing, fall back to placeholder
+    // @ts-ignore - type compatibility depending on SDK minor versions
     if (file?.body) {
       return new Response(file.body, {
         status: 200,
@@ -58,10 +50,9 @@ export async function GET(req: NextRequest, context: { params: { api: string; sc
       })
     }
   } catch {
-    // fall through to placeholder
+    // continue to placeholder
   }
 
-  // Fallback placeholder if the code was not stored/found
   const lua = makePlaceholderLua(decodeURIComponent(script || ""), token)
   return new Response(lua, {
     status: 200,

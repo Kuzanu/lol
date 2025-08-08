@@ -143,7 +143,7 @@ export default function ProtectionPage() {
       // Build loader URL that hits the same PAGE route with ?format=lua
       const url = `https://nebula-protecter.vercel.app/protected/API-${encodeURIComponent(
         token
-      )}/name/${encodeURIComponent(trimmed)}?format=lua&v=${Date.now()}`
+      )}/name/${encodeURIComponent(trimmed)}/lua?v=${Date.now()}`
       const snippet = `loadstring(game:HttpGet("${url}"))()`
 
       setApiToken(token)
